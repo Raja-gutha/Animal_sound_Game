@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation Template for Elastic Beanstalk Application and IAM Roles
+
+Parameters:
+  ApplicationName:
+    Type: String
+    Description: The name of the application
+    Default: TranscriptionApp
+
+  ApplicationVersion:
+    Type: String
+    Description: Application version
+    Default: v1.0
+
+Resources:
+  # Elastic Beanstalk Application
+  ElasticBeanstalkApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Ref ApplicationName
+
+  # Elastic Beanstalk Environment
+  ElasticBeanstalkEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref ElasticBeanstalkApplication
+      EnvironmentName: !Sub "${ApplicationName}-env"
+      VersionLabel: !Ref ApplicationVersion
+      OptionSettings:
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: "EnvironmentType"
+          Value: "LoadBalanced"
+        - Namespace: "aws:elasticbeanstalk:container:java:default"
+          OptionName: "JavaVersion"
+          Value: "11"
+        - Namespace: "aws:elasticbeanstalk:environment:proxy"
+          OptionName: "ProxyServer"
+          Value: "nginx"
+
+  # IAM Role for CodePipeline
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts
