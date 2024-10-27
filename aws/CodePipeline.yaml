@@ -1,11 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: AWS CloudFormation Template for CodePipeline
+Description: AWS CloudFormation Template for Elastic Beanstalk Application Deployment with CodePipeline
 
 Parameters:
   ApplicationName:
     Type: String
     Description: The name of the application
     Default: TranscriptionApp
+
+  ApplicationVersion:
+    Type: String
+    Description: Application version
+    Default: v1.0
 
   GitHubOwner:
     Type: String
@@ -21,6 +26,77 @@ Parameters:
     Description: The GitHub branch to deploy from
 
 Resources:
+  # Elastic Beanstalk Application
+  ElasticBeanstalkApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: !Ref ApplicationName
+
+  # Elastic Beanstalk Environment
+  ElasticBeanstalkEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref ElasticBeanstalkApplication
+      EnvironmentName: !Sub "${ApplicationName}-env"
+      VersionLabel: !Ref ApplicationVersion
+      OptionSettings:
+        - Namespace: "aws:elasticbeanstalk:environment"
+          OptionName: "EnvironmentType"
+          Value: "LoadBalanced"
+        - Namespace: "aws:elasticbeanstalk:container:java:default"
+          OptionName: "JavaVersion"
+          Value: "11"
+        - Namespace: "aws:elasticbeanstalk:environment:proxy"
+          OptionName: "ProxyServer"
+          Value: "nginx"
+
+  # IAM Role for CodePipeline
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodePipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticbeanstalk:UpdateEnvironment
+                  - elasticbeanstalk:CreateApplicationVersion
+                  - s3:GetObject
+                  - s3:PutObject
+                  - secretsmanager:GetSecretValue
+                Resource: "*"
+
+  # IAM Role for CodeBuild
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: "*"
+
   # CodeBuild Project
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
@@ -89,6 +165,10 @@ Resources:
                 VersionLabel: !Ref ApplicationVersion
 
 Outputs:
+  ApplicationURL:
+    Description: "URL of the deployed application"
+    Value: !Sub "http://${ElasticBeanstalkEnvironment}.elasticbeanstalk.com"
+
   PipelineURL:
     Description: "URL of the CodePipeline"
     Value: !Sub "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/${CodePipeline}/view"
