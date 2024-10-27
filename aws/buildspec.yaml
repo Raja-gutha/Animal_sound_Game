@@ -1,0 +1,25 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto11  # Use the appropriate Java version
+    commands:
+      - echo "Installing dependencies..."
+
+  pre_build:
+    commands:
+      - echo "Running tests..."
+      - ./mvnw test  # If you're using Maven, this will run tests
+
+  build:
+    commands:
+      - echo "Building the application..."
+      - ./mvnw package  # Adjust to your build tool; this example uses Maven
+      - mkdir -p build
+      - cp target/*.jar build/  # Place the .jar file in a folder named `build`
+
+artifacts:
+  files:
+    - build/**/*.jar
+  discard-paths: yes
