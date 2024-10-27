@@ -35,11 +35,17 @@ Resources:
     Properties:
       ApplicationName: !Ref ElasticBeanstalkApplication
       EnvironmentName: !Sub "${ApplicationName}-env"
-      SolutionStack: "64bit Amazon Linux 2 v5.6.2 running Java 11"
+      VersionLabel: !Ref ApplicationVersion
       OptionSettings:
         - Namespace: "aws:elasticbeanstalk:environment"
           OptionName: "EnvironmentType"
           Value: "LoadBalanced"
+        - Namespace: "aws:elasticbeanstalk:container:java:default"
+          OptionName: "JavaVersion"
+          Value: "11"
+        - Namespace: "aws:elasticbeanstalk:environment:proxy"
+          OptionName: "ProxyServer"
+          Value: "nginx"
 
   # CodeBuild Project
   CodeBuildProject:
