@@ -1,0 +1,6 @@
+[
+  {
+    "name": "my-container",  // This should match the container name in your task definition
+    "imageUri": "<account-id>.dkr.ecr.<region>.amazonaws.com/<repository-name>:<tag>"
+  }
+]
