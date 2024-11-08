@@ -1,9 +1,26 @@
 version: 0.0
-Resources:
-  - TargetService:
-      Type: AWS::ECS::Service
-      Properties:
-        TaskDefinition: my-task-family
-        LoadBalancerInfo:
-          ContainerName: my-container
-          ContainerPort: 80
+os: linux
+resources:
+  - targetService:
+      type: AWS::ECS::Service
+      properties:
+        taskDefinition: !Ref ECSFargateTaskDefinition
+        loadBalancerInfo:
+          containerName: "your-container-name"
+          containerPort: 8080  # Ensure this matches your app's exposed port
+        platformVersion: LATEST
+        desiredCount: 1  # Adjust based on the number of desired containers
+
+hooks:
+  BeforeInstall:
+    - location: scripts/stop_old_application.sh
+      timeout: 180
+      runas: ecs
+  AfterInstall:
+    - location: scripts/start_new_application.sh
+      timeout: 180
+      runas: ecs
+  ValidateService:
+    - location: scripts/validate_application.sh
+      timeout: 180
+      runas: ecs
